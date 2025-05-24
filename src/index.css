@@ -1,13 +1,201 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); 
+
+:root {
+  --cor-primaria: #2FD89E; 
+  --cor-primaria-hover: #29b88a; 
+  --cor-texto-principal: #333333;
+  --cor-texto-secundario: #555555;
+  --cor-fundo-pagina: #f8f9fa; 
+  --cor-fundo-card: #ffffff;
+  --cor-borda: #e0e0e0;
+  --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --cantos-arredondados: 8px;
+  --fonte-principal: 'Inter', sans-serif; 
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  margin: 0;
+  font-family: var(--fonte-principal);
+  background-color: var(--cor-fundo-pagina);
+  color: var(--cor-texto-principal);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--cor-texto-principal);
+  margin-top: 0;
+}
+
+a {
+  color: var(--cor-primaria);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--cor-primaria-hover);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="url"],
+textarea,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--cantos-arredondados);
+  box-sizing: border-box;
+  font-family: var(--fonte-principal);
+  font-size: 1rem;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px rgba(47, 216, 158, 0.2);
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: var(--cor-fundo-card); 
+  border-radius: var(--cantos-arredondados);
+  box-shadow: var(--sombra-card);
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--cantos-arredondados);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none; 
+}
+
+.btn-primario {
+  background-color: var(--cor-primaria);
+  color: var(--cor-fundo-card); 
+}
+
+.btn-primario:hover {
+  background-color: var(--cor-primaria-hover);
+  box-shadow: 0 2px 8px rgba(47, 216, 158, 0.3);
+}
+
+.btn-secundario {
+  background-color: #6c757d; 
+  color: var(--cor-fundo-card);
+}
+
+.btn-secundario:hover {
+  background-color: #5a6268;
+}
+
+.btn-perigo {
+  background-color: #dc3545; 
+  color: var(--cor-fundo-card);
+}
+
+.btn-perigo:hover {
+  background-color: #c82333;
+}
+
+.btn-link {
+  background-color: transparent;
+  color: var(--cor-primaria);
+  padding: 0;
+}
+
+.btn-link:hover {
+  color: var(--cor-primaria-hover);
+  text-decoration: underline;
+}
+
+.login-page-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 30px;
+  background-color: var(--cor-fundo-card);
+  border-radius: var(--cantos-arredondados);
+  box-shadow: var(--sombra-card);
+}
+
+.login-page-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--cor-texto-principal);
+}
+
+.card {
+  background-color: var(--cor-fundo-card);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--cantos-arredondados);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--sombra-card);
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-titulo {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--cor-texto-principal);
+}
+
+.card-descricao {
+  font-size: 1rem;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 15px;
+}
+
+.card-datas {
+  font-size: 0.9rem;
+  color: #777;
+  margin-bottom: 15px;
+}
+
+.card-acoes {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px; 
+}
+
+
+.page-content-wrapper {
+  padding: 20px; 
+}
+
+.app-footer {
+  border-top: 1px solid var(--cor-borda);
+  background-color: var(--cor-fundo-pagina); 
+}
+
+.logo {
+  font-family: var(--fonte-principal);
+  font-size: 2rem; 
+  font-weight: 700; 
+  color: var(--cor-primaria); 
+  text-decoration: none;
+  letter-spacing: -0.5px; 
+  transition: color 0.2s ease-in-out;
+}
+
+.logo:hover {
+  color: var(--cor-primaria-hover); 
 }

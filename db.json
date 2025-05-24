@@ -1,0 +1,51 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Administrador",
+      "email": "admin@viitra.com",
+      "password": "123456"
+    },
+    {
+      "id": "2",
+      "name": "Matheus Lima",
+      "email": "matheus@viitra.com",
+      "password": "123456"
+    }
+  ],
+  "projects": [
+    {
+      "id": "p1",
+      "name": "Website Redesign",
+      "description": "teste 2.",
+      "start_date": "2024-06-01",
+      "end_date": "2024-09-30",
+      "creator_id": "1",
+      "collaborators": [
+        "1",
+        "2"
+      ],
+      "tasks": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "title": "Design Homepage Mockup",
+      "status": "in_progress",
+      "due_date": "2024-06-15T23:59:59.999Z",
+      "image_url": "https://via.placeholder.com/150/0000FF/808080?Text=HomepageMockup.png",
+      "project_id": "p1",
+      "creator_id": "1"
+    },
+    {
+      "id": "e406",
+      "title": "fazer botao",
+      "status": "todo",
+      "due_date": "2025-05-25T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "p1",
+      "creator_id": "1"
+    }
+  ]
+}
