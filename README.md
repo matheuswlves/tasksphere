@@ -47,6 +47,9 @@ Acesse: [http://localhost:3000](http://localhost:3000)
 
 ## Informações adicionais:
 
+Link do deploy: https://tasksphere-c4le-fgccqemp0-matheus-projects-194f4271.vercel.app
+OBS: Para fazer o teste da solução, com todas as chamadas da API funcionando, é necessário clonar o projeto, instalar as dependências, e rodar o JSON server localmente no seu terminal usando json-server --watch db.json --port 3001, enquanto acessam a versão da aplicação que está na Vercel.
+
 ## Credenciais de Teste:
 
 Admin:
