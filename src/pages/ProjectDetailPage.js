@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios'; 
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { getProjectById, deleteProject } from '../api/projectApi';
 import TaskList from '../components/organisms/TaskList';
@@ -10,11 +10,11 @@ function ProjectDetailPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [project, setProject] = useState(null);
-    const [systemUsers, setSystemUsers] = useState([]); 
+    const [systemUsers, setSystemUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const API_URL_USERS = 'http://localhost:3001/users'; 
+    const API_URL_USERS = 'http://localhost:3001/users';
 
     const fetchPageData = useCallback(async () => {
         if (!user) {
@@ -24,30 +24,27 @@ function ProjectDetailPage() {
         }
         setLoading(true);
         try {
-            const projectData = await getProjectById(projectId);
+            const projectDataPromise = getProjectById(projectId);
+            const usersPromise = axios.get(API_URL_USERS);
+
+            const [data, usersResponse] = await Promise.all([projectDataPromise, usersPromise]);
+            
+            setSystemUsers(usersResponse.data || []);
+
             const isAdmin = user.role === 'admin';
-            const isCreator = projectData.creator_id === user.id;
-            const isCollaborator = projectData.collaborators?.includes(user.id);
+            const isCreator = data.creator_id === user.id;
+            const isCollaborator = data.collaborators?.includes(user.id);
 
             if (!isAdmin && !isCreator && !isCollaborator) {
                 setError("Você não tem permissão para visualizar este projeto.");
                 setLoading(false);
                 return;
             }
-            setProject(projectData);
-
-            try {
-                const usersResponse = await axios.get(API_URL_USERS);
-                setSystemUsers(usersResponse.data || []);
-            } catch (usersError) {
-                console.error("Falha ao buscar usuários do sistema:", usersError);
-                setError(prevError => prevError ? `${prevError} E falha ao buscar lista de usuários.` : 'Falha ao buscar lista de usuários.');
-            }
-
-            setError(''); 
+            setProject(data);
+            setError('');
         } catch (err) {
-            setError('Falha ao buscar detalhes do projeto.');
-            console.error("Erro em fetchPageData (projeto):", err.response || err.message || err);
+            setError('Falha ao buscar dados da página.');
+            console.error("Erro em fetchPageData:", err.response || err.message || err);
         } finally {
             setLoading(false);
         }
@@ -72,6 +69,7 @@ function ProjectDetailPage() {
             } catch (err) {
                 setError('Falha ao excluir projeto.');
                 console.error("Erro em handleDeleteProject:", err.response || err.message || err);
+                setLoading(false);
             }
         }
     };
@@ -106,10 +104,14 @@ function ProjectDetailPage() {
 
             <h3>Colaboradores:</h3>
             <ul>
-                {project.collaborators?.map(collabId => {
-                    const collaborator = systemUsers.find(u => u.id === collabId);
-                    return <li key={collabId}>{collaborator ? `${collaborator.name} (${collaborator.email})` : `ID do Usuário: ${collabId}`}</li>;
-                })}
+                {project.collaborators?.length > 0 ? (
+                    project.collaborators.map(collabId => {
+                        const collaborator = systemUsers.find(u => u.id === collabId);
+                        return <li key={collabId}>{collaborator ? `${collaborator.name} (${collaborator.email})` : `ID: ${collabId}`}</li>;
+                    })
+                ) : (
+                    <li>Nenhum colaborador neste projeto.</li>
+                )}
             </ul>
 
             <h3>Tarefas:</h3>
@@ -121,7 +123,7 @@ function ProjectDetailPage() {
             <TaskList
                 projectId={projectId}
                 projectCreatorId={project.creator_id}
-                systemUsers={systemUsers} 
+                systemUsers={systemUsers}
             />
         </div>
     );

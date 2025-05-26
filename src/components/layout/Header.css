@@ -1,9 +1,8 @@
-/* Em Header.css ou seu CSS principal */
 .app-header {
-    background-color: var(--cor-fundo-card); /* Branco como na imagem de referência */
+    background-color: var(--cor-fundo-card); 
     padding: 15px 30px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    margin-bottom: 20px; /* Espaço antes do conteúdo da página */
+    margin-bottom: 20px; 
   }
   
   .header-content {
@@ -15,10 +14,10 @@
   }
   
   .logo {
-    font-size: 1.8rem;
-    font-weight: 700;
+    font-size: 1.8rem; 
+    font-weight: 700; 
     color: var(--cor-primaria); 
-    text-decoration: none;
+    text-decoration: none; 
   }
   
   .app-nav {
@@ -44,3 +43,5 @@
     color: var(--cor-texto-secundario);
     margin-right: 10px;
   }
+
+  

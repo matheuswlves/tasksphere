@@ -2,29 +2,38 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getProjectById, updateProject } from '../api/projectApi';
-import axios from 'axios'; 
+import axios from 'axios';
+
+const RANDOM_USER_API = 'https://randomuser.me/api/?results=5&inc=name,email,login';
 
 function ManageCollaboratorsPage() {
     const { projectId } = useParams();
-    const { user } = useAuth(); 
+    const { user } = useAuth();
     const navigate = useNavigate();
+
     const [project, setProject] = useState(null);
-    const [currentCollaboratorsDetails, setCurrentCollaboratorsDetails] = useState([]); 
-    const [allSystemUsers, setAllSystemUsers] = useState([]); 
-    const [usersToAdd, setUsersToAdd] = useState([]); 
-    const [searchTerm, setSearchTerm] = useState(''); 
+    const [currentCollaboratorsDetails, setCurrentCollaboratorsDetails] = useState([]);
+    const [allSystemUsers, setAllSystemUsers] = useState([]);
+    const [usersToAdd, setUsersToAdd] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
     const fetchProjectData = useCallback(async () => {
-        if (!user) return;
+        if (!user) {
+            setLoading(false);
+            setError("Usuário não autenticado.");
+            return;
+        }
         setLoading(true);
         try {
             const projectData = await getProjectById(projectId);
-            if (projectData.creator_id !== user.id) {
+            if (projectData.creator_id !== user.id && user.role !== 'admin') {
                 setError("Você não está autorizado a gerenciar colaboradores para este projeto.");
+                setProject(null); 
                 setLoading(false);
                 return;
             }
@@ -44,7 +53,7 @@ function ManageCollaboratorsPage() {
         } finally {
             setLoading(false);
         }
-    }, [projectId, user]);
+    }, [projectId, user, navigate]); 
 
     const fetchAllSystemUsers = useCallback(async () => {
         try {
@@ -64,9 +73,10 @@ function ManageCollaboratorsPage() {
     useEffect(() => {
         if (project && allSystemUsers.length > 0) {
             const potentialCollaborators = allSystemUsers.filter(systemUser =>
-                systemUser.id !== project.creator_id && 
-                !project.collaborators.includes(systemUser.id) && 
-                (systemUser.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                systemUser.id !== project.creator_id &&
+                !project.collaborators.includes(systemUser.id) &&
+                (searchTerm === '' || 
+                 systemUser.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                  systemUser.email.toLowerCase().includes(searchTerm.toLowerCase()))
             );
             setUsersToAdd(potentialCollaborators);
@@ -77,7 +87,10 @@ function ManageCollaboratorsPage() {
 
 
     const handleAddExistingCollaborator = async (userIdToAdd) => {
-        if (!project || user.id !== project.creator_id) return;
+        if (!project || (user.id !== project.creator_id && user.role !== 'admin')) {
+            setError("Apenas o criador do projeto ou um administrador pode adicionar colaboradores.");
+            return;
+        }
         if (project.collaborators.includes(userIdToAdd)) {
             setError("Este usuário já é um colaborador.");
             return;
@@ -105,7 +118,10 @@ function ManageCollaboratorsPage() {
     };
 
     const handleRemoveCollaborator = async (collaboratorIdToRemove) => {
-        if (!project || user.id !== project.creator_id) return;
+        if (!project || (user.id !== project.creator_id && user.role !== 'admin')) {
+            setError("Apenas o criador do projeto ou um administrador pode remover colaboradores.");
+            return;
+        }
         if (collaboratorIdToRemove === project.creator_id) {
             setError("O criador do projeto não pode ser removido.");
             return;
@@ -133,17 +149,16 @@ function ManageCollaboratorsPage() {
         }
     };
 
-
     if (loading) return <div className="page-container" style={{textAlign: 'center'}}>Carregando...</div>;
-    if (!project) return <div className="page-container" style={{textAlign: 'center'}}>Projeto não encontrado, acesso negado ou falha ao carregar. <Link to="/dashboard">Voltar ao Dashboard</Link></div>;
+    if (!project && !error) return <div className="page-container" style={{textAlign: 'center'}}>Carregando dados do projeto...</div>; // Melhor feedback inicial
     if (error && error.includes("autorizado")) return <div className="page-container" style={{ color: 'red' }}>{error} <Link to={`/project/${projectId}`}>Voltar ao Projeto</Link></div>;
+    if (!project && error) return <div className="page-container" style={{ color: 'red', textAlign: 'center' }}>{error} <Link to="/dashboard">Voltar ao Dashboard</Link></div>;
 
 
     return (
         <div className="page-container" style={{maxWidth: '800px'}}>
             <h2>Gerenciar Colaboradores para: {project?.name}</h2>
             
-            {}
             {error && !error.includes("autorizado") && <p style={{ color: 'red' }}>{error}</p>}
             {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
 
@@ -165,7 +180,7 @@ function ManageCollaboratorsPage() {
                         </li>
                     ))}
                 </ul>
-            ) : <p>Nenhum colaborador (além do criador, se aplicável) neste projeto ainda.</p>}
+            ) : <p>Nenhum colaborador (além do criador) neste projeto ainda.</p>}
 
             <hr style={{margin: '30px 0'}}/>
 
@@ -197,10 +212,6 @@ function ManageCollaboratorsPage() {
                 searchTerm && <p>Nenhum usuário encontrado com o termo buscado ou todos já são colaboradores/criador.</p>
             )}
             
-            {}
-            {}
-
-
             <div style={{ marginTop: "30px", textAlign: 'center' }}>
                 <Link to={`/project/${projectId}`} className="btn btn-link">
                     Voltar para o Projeto
