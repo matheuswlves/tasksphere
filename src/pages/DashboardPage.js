@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react'; 
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getProjects } from '../api/projectApi';
 
 function DashboardPage() {
-    const [allUserProjects, setAllUserProjects] = useState([]); 
+    const [allUserProjects, setAllUserProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const { user } = useAuth();
+    const { user } = useAuth(); 
 
     const [projectSearchTerm, setProjectSearchTerm] = useState('');
 
@@ -17,30 +17,36 @@ function DashboardPage() {
             setLoading(true);
             try {
                 const allProjectsFromApi = await getProjects();
-                const userProjectsFiltered = allProjectsFromApi.filter(p =>
-                    p.creator_id === user.id || (p.collaborators && p.collaborators.includes(user.id))
-                );
-                setAllUserProjects(userProjectsFiltered); 
+                let projectsToDisplay;
+
+                if (user.role === 'admin') {
+                    projectsToDisplay = allProjectsFromApi; 
+                } else {
+                    projectsToDisplay = allProjectsFromApi.filter(p =>
+                        p.creator_id === user.id || (p.collaborators && p.collaborators.includes(user.id))
+                    );
+                }
+                setAllUserProjects(projectsToDisplay);
                 setError('');
             } catch (err) {
                 setError('Falha ao buscar projetos.');
                 console.error("Erro no Dashboard ao buscar projetos:", err);
-                setAllUserProjects([]); 
+                setAllUserProjects([]);
             } finally {
                 setLoading(false);
             }
         };
         fetchProjects();
-    }, [user]);
+    }, [user]); 
 
     const displayedProjects = useMemo(() => {
         if (!projectSearchTerm) {
-            return allUserProjects; 
+            return allUserProjects;
         }
         return allUserProjects.filter(project =>
             project.name.toLowerCase().includes(projectSearchTerm.toLowerCase())
         );
-    }, [allUserProjects, projectSearchTerm]); 
+    }, [allUserProjects, projectSearchTerm]);
 
     if (loading) return <div className="page-container" style={{textAlign: 'center'}}>Carregando projetos...</div>;
     if (error) return <div className="page-container" style={{ color: 'red', textAlign: 'center' }}>{error}</div>;
@@ -54,23 +60,22 @@ function DashboardPage() {
                 </Link>
             </div>
 
-            {}
             <div style={{ marginBottom: '20px' }}>
                 <input
                     type="text"
                     placeholder="Buscar projetos por nome..."
                     value={projectSearchTerm}
                     onChange={(e) => setProjectSearchTerm(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box' }} 
+                    style={{ width: '100%', boxSizing: 'border-box' }}
                 />
             </div>
 
-            <h3>Seus Projetos:</h3>
+            <h3>{user?.role === 'admin' ? 'Todos os Projetos (Admin View)' : 'Seus Projetos:'}</h3>
             {displayedProjects.length === 0 ? (
-                <p>{projectSearchTerm ? 'Nenhum projeto encontrado com esse nome.' : 'Nenhum projeto cadastrado. Crie um!'}</p>
+                <p>{projectSearchTerm ? 'Nenhum projeto encontrado com esse nome.' : (user?.role === 'admin' ? 'Nenhum projeto cadastrado no sistema.' : 'Nenhum projeto para você. Crie um!')}</p>
             ) : (
                 <div className="projects-list-container">
-                    {displayedProjects.map(project => ( 
+                    {displayedProjects.map(project => (
                         <div key={project.id} className="card">
                             <h4 className="card-titulo">
                                 <Link to={`/project/${project.id}`}>{project.name}</Link>

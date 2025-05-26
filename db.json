@@ -4,26 +4,46 @@
       "id": "1",
       "name": "Administrador",
       "email": "admin@viitra.com",
-      "password": "123456"
+      "password": "123456",
+      "role": "admin"
     },
     {
       "id": "2",
       "name": "Matheus Lima",
       "email": "matheus@viitra.com",
       "password": "123456"
+    },
+    {
+      "id": "3",
+      "name": "Abraão Silva",
+      "email": "abraao@viitra.com",
+      "password": "123456"
     }
   ],
   "projects": [
     {
-      "id": "p1",
-      "name": "Website Redesign",
-      "description": "teste 2.",
-      "start_date": "2024-06-01",
-      "end_date": "2024-09-30",
+      "id": "0265",
+      "name": "Site Tasksphere",
+      "description": "Desafio Técnico Viitra",
+      "start_date": "2025-05-23",
+      "end_date": "2025-05-30",
       "creator_id": "1",
       "collaborators": [
         "1",
         "2"
+      ],
+      "tasks": []
+    },
+    {
+      "id": "68c4",
+      "name": "Testagem do site tasksphere",
+      "description": "Testar se as funcionalidades da solução obedecem os requisitos do desafio técnico.",
+      "start_date": "2025-05-23",
+      "end_date": "2025-05-30",
+      "creator_id": "2",
+      "collaborators": [
+        "2",
+        "3"
       ],
       "tasks": []
     }
@@ -46,6 +66,86 @@
       "image_url": "http://localhost:3000/project/p1/task/new",
       "project_id": "p1",
       "creator_id": "1"
+    },
+    {
+      "id": "2bb6",
+      "title": "Tela de login",
+      "status": "done",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265"
+    },
+    {
+      "id": "09be",
+      "title": "Tela inical",
+      "status": "done",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265"
+    },
+    {
+      "id": "900f",
+      "title": "Tela de detalhes do projeto",
+      "status": "done",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265"
+    },
+    {
+      "id": "7d4c",
+      "title": "Tela do cadastro e edição do projeto",
+      "status": "done",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265"
+    },
+    {
+      "title": "Tela de cadastro e edição de tarefa",
+      "status": "done",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265",
+      "id": "f479"
+    },
+    {
+      "id": "2f2c",
+      "title": "Tela de Gerenciamento de colaboradores",
+      "status": "done",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265"
+    },
+    {
+      "id": "6a42",
+      "title": "Tela de acesso negado ou erro",
+      "status": "in_progress",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265"
+    },
+    {
+      "id": "686f",
+      "title": "Próxima etapa do teste....",
+      "status": "todo",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "0265"
+    },
+    {
+      "id": "2b79",
+      "title": "Testar botões",
+      "status": "done",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "68c4"
+    },
+    {
+      "id": "a47a",
+      "title": "Testar páginas",
+      "status": "in_progress",
+      "due_date": "2025-05-30T00:00:00.000Z",
+      "image_url": "http://localhost:3000/project/p1/task/new",
+      "project_id": "68c4"
     }
   ]
 }

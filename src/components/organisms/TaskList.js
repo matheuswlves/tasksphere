@@ -3,35 +3,41 @@ import { Link } from 'react-router-dom';
 import { getTasksByProjectId, deleteTask as deleteTaskApi } from '../../api/taskApi';
 import { useAuth } from '../../contexts/AuthContext';
 
-const ITEMS_PER_PAGE = 5; 
+const ITEMS_PER_PAGE = 5;
 
-function TaskList({ projectId, projectCreatorId }) {
+function TaskList({ projectId, projectCreatorId, systemUsers = [] }) {
     const { user } = useAuth();
-    const [tasks, setTasks] = useState([]); 
+    const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const [searchTerm, setSearchTerm] = useState(''); 
-    const [statusFilter, setStatusFilter] = useState(''); 
-
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+
+    const usersMap = useMemo(() => {
+        const map = new Map();
+        if (Array.isArray(systemUsers)) {
+            systemUsers.forEach(u => map.set(u.id, u.name));
+        }
+        return map;
+    }, [systemUsers]);
 
     const fetchProjectTasks = useCallback(async () => {
         if (!projectId) {
-            setTasks([]); 
+            setTasks([]);
             setLoading(false);
             return;
         }
         setLoading(true);
         try {
-            console.log(`TaskList: Buscando tarefas para o projeto ${projectId}`);
             const projectTasksData = await getTasksByProjectId(projectId);
             setTasks(projectTasksData || []);
             setError('');
         } catch (err) {
             setError('Falha ao carregar tarefas.');
             console.error("Erro em TaskList ao buscar tarefas:", err.response || err.message || err);
-            setTasks([]); 
+            setTasks([]);
         } finally {
             setLoading(false);
         }
@@ -42,7 +48,7 @@ function TaskList({ projectId, projectCreatorId }) {
     }, [fetchProjectTasks]);
 
     const handleDeleteTask = async (taskId, taskCreatorId) => {
-        if (user.id !== taskCreatorId && user.id !== projectCreatorId) {
+        if (user.role !== 'admin' && user.id !== taskCreatorId && user.id !== projectCreatorId) {
             alert("Você não tem permissão para excluir esta tarefa.");
             return;
         }
@@ -57,8 +63,7 @@ function TaskList({ projectId, projectCreatorId }) {
     };
 
     const filteredTasks = useMemo(() => {
-        let tempTasks = Array.isArray(tasks) ? tasks : []; 
-
+        let tempTasks = Array.isArray(tasks) ? tasks : [];
         if (statusFilter) {
             tempTasks = tempTasks.filter(task => task.status === statusFilter);
         }
@@ -89,7 +94,6 @@ function TaskList({ projectId, projectCreatorId }) {
 
     return (
         <div className="task-list-section" style={{marginTop: '20px'}}>
-            {}
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                 <input
                     type="text"
@@ -113,42 +117,44 @@ function TaskList({ projectId, projectCreatorId }) {
             {paginatedTasks.length === 0 && !loading ? (
                 <p>Nenhuma tarefa encontrada para este projeto ou com os filtros aplicados.</p>
             ) : (
-                paginatedTasks.map(task => (
-                    <div key={task.id} className="card" style={{ marginBottom: '15px', display: 'flex', alignItems: 'flex-start' }}>
-                        <img
-                            src={task.image_url || 'https://via.placeholder.com/50'} 
-                            alt={task.title}
-                            style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '15px', borderRadius: 'var(--cantos-arredondados)' }}
-                        />
-                        <div style={{flex: 1}}>
-                            <h5 className="card-titulo" style={{ fontSize: '1.1rem', marginBottom: '5px' }}>{task.title}</h5>
-                            <p style={{ margin: '2px 0', fontSize: '0.9rem' }}>Status: {task.status}</p>
-                            <p style={{ margin: '2px 0', fontSize: '0.9rem' }}>
-                                Entrega: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
-                            </p>
-                            <small>Criada por: ID {task.creator_id}</small>
-                            <div className="card-acoes" style={{ marginTop: '8px' }}>
-                                {(user.id === task.creator_id || user.id === projectCreatorId) && (
-                                    <>
-                                        <Link to={`/project/${projectId}/task/${task.id}/edit`} className="btn btn-link" style={{ padding: '0', marginRight: '10px' }}>
-                                            Editar
-                                        </Link>
-                                        <button
-                                            onClick={() => handleDeleteTask(task.id, task.creator_id)}
-                                            className="btn btn-link"
-                                            style={{ color: 'var(--cor-perigo, red)', padding: '0' }} 
-                                        >
-                                            Excluir
-                                        </button>
-                                    </>
-                                )}
+                paginatedTasks.map(task => {
+                    const creatorName = usersMap.get(task.creator_id) || `ID ${task.creator_id}`;
+                    return (
+                        <div key={task.id} className="card" style={{ marginBottom: '15px', display: 'flex', alignItems: 'flex-start' }}>
+                            <img
+                                src={task.image_url || 'https://via.placeholder.com/50'}
+                                alt={task.title}
+                                style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '15px', borderRadius: 'var(--cantos-arredondados)' }}
+                            />
+                            <div style={{flex: 1}}>
+                                <h5 className="card-titulo" style={{ fontSize: '1.1rem', marginBottom: '5px' }}>{task.title}</h5>
+                                <p style={{ margin: '2px 0', fontSize: '0.9rem' }}>Status: {task.status}</p>
+                                <p style={{ margin: '2px 0', fontSize: '0.9rem' }}>
+                                    Entrega: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
+                                </p>
+                                <small>Criada por: {creatorName}</small>
+                                <div className="card-acoes" style={{ marginTop: '8px' }}>
+                                    {(user.role === 'admin' || user.id === task.creator_id || user.id === projectCreatorId) && (
+                                        <>
+                                            <Link to={`/project/${projectId}/task/${task.id}/edit`} className="btn btn-link" style={{ padding: '0', marginRight: '10px' }}>
+                                                Editar
+                                            </Link>
+                                            <button
+                                                onClick={() => handleDeleteTask(task.id, task.creator_id)}
+                                                className="btn btn-link"
+                                                style={{ color: 'var(--cor-perigo, red)', padding: '0' }}
+                                            >
+                                                Excluir
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))
+                    );
+                })
             )}
 
-            {}
             {totalPages > 1 && (
                 <div style={{ marginTop: '20px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
                     <button onClick={goToPreviousPage} disabled={currentPage === 1} className="btn btn-secundario">

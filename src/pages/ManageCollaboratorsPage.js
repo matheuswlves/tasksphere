@@ -1,25 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getProjectById, updateProject } from '../api/projectApi'; 
-import axios from 'axios';
-
-const RANDOM_USER_API = 'https://randomuser.me/api/?results=5&inc=name,email,login'; 
+import { getProjectById, updateProject } from '../api/projectApi';
+import axios from 'axios'; 
 
 function ManageCollaboratorsPage() {
     const { projectId } = useParams();
-    const { user } = useAuth();
+    const { user } = useAuth(); 
     const navigate = useNavigate();
-
     const [project, setProject] = useState(null);
-    const [collaboratorsDetails, setCollaboratorsDetails] = useState([]); 
-    const [suggestedUsers, setSuggestedUsers] = useState([]);
-    const [loading, setLoading] = useState(true); 
-    const [actionLoading, setActionLoading] = useState(false); 
+    const [currentCollaboratorsDetails, setCurrentCollaboratorsDetails] = useState([]); 
+    const [allSystemUsers, setAllSystemUsers] = useState([]); 
+    const [usersToAdd, setUsersToAdd] = useState([]); 
+    const [searchTerm, setSearchTerm] = useState(''); 
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    const fetchProjectAndCollaborators = useCallback(async () => {
+    const fetchProjectData = useCallback(async () => {
         if (!user) return;
         setLoading(true);
         try {
@@ -34,85 +33,78 @@ function ManageCollaboratorsPage() {
             if (projectData.collaborators && projectData.collaborators.length > 0) {
                 const usersResponse = await axios.get(`http://localhost:3001/users`);
                 const detailedCollaborators = usersResponse.data.filter(u => projectData.collaborators.includes(u.id));
-                setCollaboratorsDetails(detailedCollaborators);
+                setCurrentCollaboratorsDetails(detailedCollaborators);
             } else {
-                setCollaboratorsDetails([]);
+                setCurrentCollaboratorsDetails([]);
             }
             setError('');
         } catch (err) {
-            setError('Falha ao carregar dados do projeto ou colaboradores.');
-            console.error(err);
+            setError('Falha ao carregar dados do projeto.');
+            console.error("Erro em fetchProjectData:", err.response || err.message || err);
         } finally {
             setLoading(false);
         }
-    }, [projectId, user]); 
+    }, [projectId, user]);
+
+    const fetchAllSystemUsers = useCallback(async () => {
+        try {
+            const response = await axios.get(`http://localhost:3001/users`);
+            setAllSystemUsers(response.data || []);
+        } catch (err) {
+            console.error("Falha ao buscar todos os usuários do sistema:", err.response || err.message || err);
+            setError("Não foi possível carregar a lista de usuários do sistema.");
+        }
+    }, []);
 
     useEffect(() => {
-        fetchProjectAndCollaborators();
-    }, [fetchProjectAndCollaborators]);
+        fetchProjectData();
+        fetchAllSystemUsers();
+    }, [fetchProjectData, fetchAllSystemUsers]);
 
-    const fetchSuggestedUsers = async () => { 
-        setActionLoading(true); 
-        setSuccessMessage(''); setError('');
-        try {
-            const response = await axios.get(RANDOM_USER_API);
-            const suggestions = response.data.results.map(ru => ({
-                id: ru.login.uuid,
-                name: `${ru.name.first} ${ru.name.last}`,
-                email: ru.email,
-            }));
-            setSuggestedUsers(suggestions);
-        } catch (err) {
-            setError('Falha ao buscar sugestões da API externa.');
-            console.error(err);
-        } finally {
-            setActionLoading(false);
+    useEffect(() => {
+        if (project && allSystemUsers.length > 0) {
+            const potentialCollaborators = allSystemUsers.filter(systemUser =>
+                systemUser.id !== project.creator_id && 
+                !project.collaborators.includes(systemUser.id) && 
+                (systemUser.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                 systemUser.email.toLowerCase().includes(searchTerm.toLowerCase()))
+            );
+            setUsersToAdd(potentialCollaborators);
+        } else {
+            setUsersToAdd([]);
         }
-    };
+    }, [searchTerm, allSystemUsers, project]);
 
-    const handleAddCollaborator = async (suggestedUser) => { 
+
+    const handleAddExistingCollaborator = async (userIdToAdd) => {
         if (!project || user.id !== project.creator_id) return;
+        if (project.collaborators.includes(userIdToAdd)) {
+            setError("Este usuário já é um colaborador.");
+            return;
+        }
 
         setActionLoading(true);
         setSuccessMessage(''); setError('');
 
         try {
-            let internalUserResponse = await axios.get(`http://localhost:3001/users?email=${suggestedUser.email}`);
-            let internalUser = internalUserResponse.data[0];
-            let newCollaboratorId;
-
-            if (internalUser) {
-                newCollaboratorId = internalUser.id;
-            } else {
-                const newInternalUserData = { name: suggestedUser.name, email: suggestedUser.email, password: "temporaryPassword" };
-                const createdUserResponse = await axios.post(`http://localhost:3001/users`, newInternalUserData);
-                internalUser = createdUserResponse.data;
-                newCollaboratorId = internalUser.id;
-                alert(`Usuário Simulado Criado: ${internalUser.name} (ID: ${internalUser.id}). Eles precisariam definir uma senha adequada.`);
-            }
-
-            if (project.collaborators.includes(newCollaboratorId)) {
-                setError(`${internalUser.name} já é um colaborador.`);
-                setActionLoading(false);
-                return;
-            }
-
-            const updatedCollaborators = [...project.collaborators, newCollaboratorId];
+            const updatedCollaborators = [...project.collaborators, userIdToAdd];
             await updateProject(projectId, { ...project, collaborators: updatedCollaborators });
             
             setProject(prev => ({ ...prev, collaborators: updatedCollaborators }));
-            setCollaboratorsDetails(prevDetails => [...prevDetails, internalUser]);
-            
-            setSuccessMessage(`${internalUser.name} adicionado como colaborador.`); 
+            const addedUser = allSystemUsers.find(u => u.id === userIdToAdd);
+            if (addedUser) {
+                setCurrentCollaboratorsDetails(prevDetails => [...prevDetails, addedUser]);
+                setSuccessMessage(`${addedUser.name} adicionado como colaborador.`);
+            }
         } catch (err) {
             setError(`Falha ao adicionar colaborador: ${err.message}`);
-            console.error(err);
+            console.error("Erro em handleAddExistingCollaborator:", err.response || err.message || err);
         } finally {
             setActionLoading(false);
         }
     };
 
-    const handleRemoveCollaborator = async (collaboratorIdToRemove) => { 
+    const handleRemoveCollaborator = async (collaboratorIdToRemove) => {
         if (!project || user.id !== project.creator_id) return;
         if (collaboratorIdToRemove === project.creator_id) {
             setError("O criador do projeto não pode ser removido.");
@@ -127,45 +119,90 @@ function ManageCollaboratorsPage() {
                 await updateProject(projectId, { ...project, collaborators: updatedCollaborators });
 
                 setProject(prev => ({ ...prev, collaborators: updatedCollaborators }));
-                setCollaboratorsDetails(prevDetails => prevDetails.filter(c => c.id !== collaboratorIdToRemove));
+                setCurrentCollaboratorsDetails(prevDetails => prevDetails.filter(c => c.id !== collaboratorIdToRemove));
                 
-                setSuccessMessage('Colaborador removido com sucesso.'); 
+                setSuccessMessage('Colaborador removido com sucesso.');
             } catch (err) {
                 setError(`Falha ao remover colaborador: ${err.message}`);
-                console.error(err);
+                console.error("Erro em handleRemoveCollaborator:", err.response || err.message || err);
             } finally {
                 setActionLoading(false);
             }
         } else {
-             setActionLoading(false); 
+            setActionLoading(false);
         }
     };
 
-    if (loading) return <div>Carregando gerenciamento de colaboradores...</div>;
-    if (error && error.includes("autorizado")) return <div style={{ color: 'red' }}>{error} <Link to={`/project/${projectId}`}>Voltar ao Projeto</Link></div>;
-    if (!project) return <div>Projeto não encontrado ou acesso negado. <Link to="/dashboard">Voltar ao Dashboard</Link></div>;
+
+    if (loading) return <div className="page-container" style={{textAlign: 'center'}}>Carregando...</div>;
+    if (!project) return <div className="page-container" style={{textAlign: 'center'}}>Projeto não encontrado, acesso negado ou falha ao carregar. <Link to="/dashboard">Voltar ao Dashboard</Link></div>;
+    if (error && error.includes("autorizado")) return <div className="page-container" style={{ color: 'red' }}>{error} <Link to={`/project/${projectId}`}>Voltar ao Projeto</Link></div>;
 
 
     return (
-        <div className="page-container"> {/* Ou sua classe de container principal */}
+        <div className="page-container" style={{maxWidth: '800px'}}>
             <h2>Gerenciar Colaboradores para: {project?.name}</h2>
-            {/* ... mensagens de erro/sucesso e lista de colaboradores atuais ... */}
+            
+            {}
+            {error && !error.includes("autorizado") && <p style={{ color: 'red' }}>{error}</p>}
+            {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
 
-            <hr />
-            <h3>Adicionar Novos Colaboradores</h3>
-            <button
-                onClick={fetchSuggestedUsers}
-                className="btn btn-primario" // <<<<<<< CLASSE ADICIONADA AQUI
-                disabled={actionLoading}
-                style={{ marginBottom: '15px' }} // Adicionando uma margem inferior para espaçamento
-            >
-                {actionLoading ? 'Carregando Sugestões...' : 'Buscar Sugestões de Usuários (RandomUser.me)'}
-            </button>
+            <h3>Colaboradores Atuais:</h3>
+            {currentCollaboratorsDetails.length > 0 ? (
+                <ul style={{ listStyle: 'none', paddingLeft: '0' }}>
+                    {currentCollaboratorsDetails.map(collab => (
+                        <li key={collab.id} className="card" style={{ marginBottom: '10px', padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>{collab.name} ({collab.email}) {collab.id === project.creator_id ? <strong>(Criador)</strong> : ''}</span>
+                            {collab.id !== project.creator_id && (
+                                <button 
+                                    onClick={() => handleRemoveCollaborator(collab.id)} 
+                                    className="btn btn-perigo btn-pequeno"
+                                    disabled={actionLoading}
+                                >
+                                    {actionLoading ? 'Removendo...' : 'Remover'}
+                                </button>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            ) : <p>Nenhum colaborador (além do criador, se aplicável) neste projeto ainda.</p>}
 
-            {/* ... lista de usuários sugeridos ... */}
+            <hr style={{margin: '30px 0'}}/>
 
-            <div style={{ marginTop: "20px" }}>
-                <Link to={`/project/${projectId}`} className="btn btn-link"> {/* Opcional: estilizar o link de voltar também */}
+            <h3>Adicionar Novos Colaboradores (Usuários Existentes no Sistema)</h3>
+            <input
+                type="text"
+                placeholder="Buscar usuário por nome ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: '100%', marginBottom: '15px', padding: '10px', boxSizing: 'border-box' }}
+            />
+
+            {usersToAdd.length > 0 ? (
+                <ul style={{ listStyle: 'none', paddingLeft: '0' }}>
+                    {usersToAdd.map(u => (
+                        <li key={u.id} className="card" style={{ marginBottom: '10px', padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>{u.name} ({u.email})</span>
+                            <button
+                                onClick={() => handleAddExistingCollaborator(u.id)}
+                                className="btn btn-primario btn-pequeno"
+                                disabled={actionLoading}
+                            >
+                                Adicionar
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                searchTerm && <p>Nenhum usuário encontrado com o termo buscado ou todos já são colaboradores/criador.</p>
+            )}
+            
+            {}
+            {}
+
+
+            <div style={{ marginTop: "30px", textAlign: 'center' }}>
+                <Link to={`/project/${projectId}`} className="btn btn-link">
                     Voltar para o Projeto
                 </Link>
             </div>
