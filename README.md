@@ -1,70 +1,78 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# TaskSphere - Gestão Colaborativa de Projetos
 
-## Available Scripts
+TaskSphere é uma aplicação web para gerenciamento de projetos e tarefas com colaboração entre usuários autenticados.
 
-In the project directory, you can run:
+## 🚀 Instruções para Instalação e Execução:
 
-### `npm start`
+### ✔️ Pré-requisitos:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Node.js (versão 16.x ou superior)
+- npm ou yarn
+- Git
+- JSON Server 
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Instalação:
 
-### `npm test`
+```bash
+git clone https://github.com/matheuswlves/tasksphere
+cd tasksphere
+npm install
+# ou
+yarn install
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Iniciando o JSON Server:
 
-### `npm run build`
+O arquivo `db.json` tem usuários, projetos e tarefas de exemplo (incluindo um com `role: "admin"`).  
+Rode, em um terminal, o comando:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+json-server --watch db.json --port 3001
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Rodando a aplicação:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Com o JSON Server ativo, execute, em outro terminal:
 
-### `npm run eject`
+```bash
+npm start
+# ou
+yarn start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Acesse: [http://localhost:3000](http://localhost:3000)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+-----------------------------------------------------------------------------------
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Informações adicionais:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Credenciais de Teste:
 
-## Learn More
+Admin:
+Email: admin@viitra.com
+Senha: 123456
+Usuário 01:(criador de 01 projeto)
+Email: matheus@viitra.com
+Senha: 123456
+Usuário 01:(colaborador)
+Email: abraao@viitra.com
+Senha: 123456
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Estrutura do Projeto:
+public/: Arquivos estáticos e index.html.
+src/: Código fonte da aplicação React.
+api/: Funções para interagir com as APIs (local e externa).
+assets/: Imagens, fontes e outros ativos estáticos (se houver).
+components/: Componentes React reutilizáveis (divididos em atoms, molecules, organisms se o Atomic Design foi seguido).
+layout/: Componentes de layout como Header, Footer.
+contexts/: Contextos React (ex: AuthContext).
+hooks/: Hooks customizados.
+pages/: Componentes que representam as diferentes telas/rotas da aplicação.
+routes/: Configuração de rotas e componentes de proteção de rota.
+styles/: Arquivos CSS globais ou específicos (se não usar CSS-in-JS ou módulos).
+App.js: Componente raiz da aplicação, onde as rotas principais são definidas.
+index.js: Ponto de entrada da aplicação React.
+index.css: Estilos globais e variáveis CSS.
+db.json: Arquivo de dados para o JSON Server.
+package.json: Lista de dependências e scripts do projeto.
