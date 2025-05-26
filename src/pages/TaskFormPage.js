@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from 'C:/Users/mathe/tasksphere/src/contexts/AuthContext.js';
-import { createTask, getTaskById, updateTask } from 'C:/Users/mathe/tasksphere/src/api/taskApi.js';
-import { getProjectById } from 'C:/Users/mathe/tasksphere/src/api/projectApi.js'; 
+import { useAuth } from '../contexts/AuthContext';
+import { createTask, getTaskById, updateTask } from '../api/taskApi';
+import { getProjectById } from '../api/projectApi';
 
 function TaskFormPage() {
     const { projectId, taskId } = useParams();
@@ -10,30 +10,31 @@ function TaskFormPage() {
     const { user } = useAuth();
     const isEditing = Boolean(taskId);
 
-    const [title, setTitle] = useState(''); 
-    const [status, setStatus] = useState('todo'); 
+    const [title, setTitle] = useState('');
+    const [status, setStatus] = useState('todo');
     const [dueDate, setDueDate] = useState('');
-    const [imageUrl, setImageUrl] = useState(''); 
+    const [imageUrl, setImageUrl] = useState('');
 
     const [projectCreatorId, setProjectCreatorId] = useState(null);
-    const [taskCreatorId, setTaskCreatorId] = useState(null); 
+    const [taskCreatorId, setTaskCreatorId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [canProceed, setCanProceed] = useState(false); 
+    const [canProceed, setCanProceed] = useState(false);
 
     const fetchProjectCreator = useCallback(async () => {
-        if (!user) return;
+        if (!user) return false; 
         try {
             const project = await getProjectById(projectId);
             setProjectCreatorId(project.creator_id);
-            if (!project.collaborators?.includes(user.id) && project.creator_id !== user.id) {
-                setError("Você não é um colaborador deste projeto e não pode criar ou editar tarefas.");
+            if (user.role === 'admin' || project.creator_id === user.id || project.collaborators?.includes(user.id)) {
+                return true;
+            } else {
+                setError("Você não tem permissão para gerenciar tarefas neste projeto.");
                 setCanProceed(false);
                 return false;
             }
-            return true; 
         } catch (err) {
-            console.error("Falha ao buscar criador do projeto", err);
+            console.error("Falha ao buscar dados do projeto para o formulário de tarefa", err);
             setError("Falha ao verificar detalhes do projeto. Não é possível prosseguir.");
             setCanProceed(false);
             return false;
@@ -45,47 +46,55 @@ function TaskFormPage() {
             setLoading(true);
             try {
                 const task = await getTaskById(taskId);
-                setTaskCreatorId(task.creator_id); 
+                setTaskCreatorId(task.creator_id);
                 setTitle(task.title);
                 setStatus(task.status);
-                setDueDate(task.due_date.split('T')[0]); 
+                setDueDate(task.due_date.split('T')[0]);
                 setImageUrl(task.image_url);
-                setCanProceed(true); 
             } catch (err) {
                 setError('Falha ao carregar dados da tarefa.');
                 console.error(err);
-                setCanProceed(false);
             } finally {
                 setLoading(false);
             }
-        } else if (!isEditing) {
         }
     }, [taskId, isEditing, user]);
 
     useEffect(() => {
-         const initialize = async () => {
-             setLoading(true);
-             const isCollaboratorOrCreator = await fetchProjectCreator();
-             if (isCollaboratorOrCreator) {
-                 if (isEditing) {
-                     await fetchTaskData();
-                 } else {
-                     setCanProceed(true); 
-                 }
-             }
-             setLoading(false);
-         };
-         initialize();
-    }, [fetchProjectCreator, fetchTaskData, isEditing]);
+        const initialize = async () => {
+            if (!user) {
+                setError("Usuário não autenticado.");
+                setCanProceed(false);
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            const hasProjectAccess = await fetchProjectCreator();
+            if (hasProjectAccess) {
+                if (isEditing) {
+                    await fetchTaskData(); 
+                }
+                setCanProceed(true); 
+            } else {
+            }
+            setLoading(false);
+        };
+        initialize();
+    }, [fetchProjectCreator, fetchTaskData, isEditing, user]);
 
 
-    const canEditOrDeleteTask = () => {
-        if (!user || !projectCreatorId) return false; 
-        return user.id === taskCreatorId || user.id === projectCreatorId;
+    const canEditThisTask = () => {
+        if (!user) return false;
+        if (user.role === 'admin') return true;
+        if (!projectCreatorId) return false; 
+        if (isEditing && taskCreatorId) { 
+            return user.id === taskCreatorId || user.id === projectCreatorId;
+        }
+        return true; 
     };
 
     const validateForm = () => {
-        setError(''); 
+        setError('');
         if (!title.trim() || !status || !dueDate || !imageUrl.trim()) {
             setError('Todos os campos são obrigatórios.');
             return false;
@@ -111,52 +120,46 @@ function TaskFormPage() {
         e.preventDefault();
         if (!validateForm()) return;
 
-        if (isEditing && !canEditOrDeleteTask()) {
-             setError("Você não tem permissão para editar esta tarefa.");
-             return;
+        if (isEditing && !canEditThisTask()) {
+            setError("Você não tem permissão para editar esta tarefa.");
+            return;
         }
 
         setLoading(true);
-        const taskData = {
+        const taskPayload = {
             title: title.trim(),
             status,
-            due_date: new Date(dueDate).toISOString(), 
+            due_date: new Date(dueDate).toISOString(),
             image_url: imageUrl.trim(),
-            project_id: projectId, 
+            project_id: projectId,
         };
 
-    try {
-        if (isEditing) {
-            console.log("Tentando atualizar tarefa...");
-            await updateTask(taskId, taskData); 
-        } else {
-            console.log("Tentando criar tarefa...");
-            await createTask(taskData);
+        try {
+            if (isEditing) {
+                await updateTask(taskId, { ...taskPayload, creator_id: taskCreatorId });
+            } else {
+                await createTask({ ...taskPayload, creator_id: user.id });
+            }
+            alert(`Tarefa ${isEditing ? 'atualizada' : 'criada'} com sucesso!`);
+            navigate(`/project/${projectId}`);
+        } catch (err) {
+            setError(`Falha ao ${isEditing ? 'atualizar' : 'criar'} tarefa. ` + (err.message || 'Verifique o console para detalhes.'));
+            console.error("Falha na operação da API (TaskForm):", err.response || err.message || err);
+        } finally {
+            setLoading(false);
         }
-        console.log("Operação da API bem-sucedida");
-        alert(`Tarefa ${isEditing ? 'atualizada' : 'criada'} com sucesso!`); 
-        navigate(`/project/${projectId}`); 
-    } catch (err) {
-        console.error("Falha na operação da API:", err.response || err.message || err);
-        setError(`Falha ao ${isEditing ? 'atualizar' : 'criar'} tarefa. ` + (err.message || 'Verifique o console para detalhes.'));
-    } finally {
-        setLoading(false);
-        console.log("handleSubmit finalizado");
-    }
-        
     };
 
-    if (loading) return <div>Carregando...</div>;
-    if (!canProceed) { 
-         return <div style={{ color: 'red' }}>{error || "Não é possível carregar o formulário da tarefa."} <Link to={`/project/${projectId}`}>Voltar ao Projeto</Link></div>;
+    if (loading) return <div className="page-container" style={{textAlign: 'center'}}>Carregando...</div>;
+    if (!canProceed) {
+        return <div className="page-container" style={{ color: 'red' }}>{error || "Não é possível carregar o formulário da tarefa."} <Link to={projectId ? `/project/${projectId}` : "/dashboard"}>Voltar</Link></div>;
     }
-    if (isEditing && projectCreatorId && taskCreatorId && !canEditOrDeleteTask()){
-         return <div style={{ color: 'red' }}>Você não tem permissão para editar esta tarefa. <Link to={`/project/${projectId}`}>Voltar ao Projeto</Link></div>;
+    if (isEditing && projectCreatorId && taskCreatorId && !canEditThisTask()){
+        return <div className="page-container" style={{ color: 'red' }}>Você não tem permissão para editar esta tarefa. <Link to={`/project/${projectId}`}>Voltar ao Projeto</Link></div>;
     }
-
 
     return (
-        <div className="page-container" style={{ maxWidth: '600px' }}> {}
+        <div className="page-container" style={{ maxWidth: '600px' }}>
             <h2>{isEditing ? 'Editar Tarefa' : 'Criar Nova Tarefa'}</h2>
             <form onSubmit={handleSubmit}>
                 <div>
@@ -198,14 +201,13 @@ function TaskFormPage() {
                 {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
                 <button
                     type="submit"
-                    className="btn btn-primario" 
-                    disabled={loading || (isEditing && !canEditOrDeleteTask())} 
-                    style={{ width: '100%', marginTop: '10px' }} 
+                    className="btn btn-primario"
+                    disabled={loading || (isEditing && !canEditThisTask())}
+                    style={{ width: '100%', marginTop: '10px' }}
                 >
                     {loading ? (isEditing ? 'Atualizando...' : 'Criando...') : (isEditing ? 'Salvar Alterações' : 'Criar Tarefa')}
                 </button>
             </form>
-            {}
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
                 <Link to={`/project/${projectId}`} className="btn btn-link">
                     Voltar para o Projeto
